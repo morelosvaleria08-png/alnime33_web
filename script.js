@@ -1,0 +1,1 @@
+// Placeholder script if you want to move JS here. Currently embedded in index.html for simplicity.

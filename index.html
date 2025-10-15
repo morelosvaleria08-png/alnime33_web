@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>ALNIME Neural Demo</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f4f6f8;margin:0;padding:20px}
+    .container{max-width:900px;margin:0 auto;display:flex;gap:20px}
+    .chat{flex:1;background:#fff;padding:16px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.06);display:flex;flex-direction:column;height:70vh}
+    .messages{flex:1;overflow:auto;padding:8px}
+    .msg{max-width:75%;padding:10px;border-radius:10px;margin:8px 0}
+    .user{background:#d1f7c4;align-self:flex-end}
+    .bot{background:#eef0f6;align-self:flex-start}
+    .input{display:flex;gap:8px;border-top:1px solid #eee;padding-top:10px}
+    .input input{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
+    .input button{padding:10px 14px;border-radius:8px;border:none;background:#6a1b9a;color:#fff;cursor:pointer}
+  </style>
+</head>
+<body>
+  <h2>ALNIME Neural Demo (educacional)</h2>
+  <div class="container">
+    <div class="chat">
+      <div id="messages" class="messages" aria-live="polite"></div>
+      <div class="input">
+        <input id="inputMsg" placeholder="Escribe algo..." autocomplete="off"/>
+        <button id="sendBtn">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const messages = document.getElementById('messages');
+const input = document.getElementById('inputMsg');
+const sendBtn = document.getElementById('sendBtn');
+
+function append(text, who){
+  const el = document.createElement('div');
+  el.className = 'msg ' + (who==='user'?'user':'bot');
+  const now = new Date();
+  el.innerHTML = text + '<div style="font-size:11px;color:#666;margin-top:6px">'+ now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + '</div>';
+  messages.appendChild(el);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function send(){
+  const txt = input.value.trim();
+  if(!txt) return;
+  append('<b>Tú:</b> '+ txt, 'user');
+  input.value='';
+  try{
+    const res = await fetch('/chat', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:txt})});
+    const data = await res.json();
+    append('<b>ALNIME:</b> '+ data.reply, 'bot');
+    // speak via browser TTS
+    if('speechSynthesis' in window){
+      const ut = new SpeechSynthesisUtterance(data.reply);
+      const voices = window.speechSynthesis.getVoices().filter(v=>v.lang.includes('es'));
+      if(voices.length) ut.voice = voices[0];
+      ut.rate = 1.0;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(ut);
+    }
+  }catch(e){
+    append('<b>ALNIME:</b> Ocurrió un error al contactar al servidor','bot');
+  }
+}
+
+sendBtn.addEventListener('click', send);
+input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send(); });
+
+// initial message
+append('<b>ALNIME:</b> Hola, soy ALNIME. ¿Qué tal tu día?', 'bot');
+</script>
+</body>
+</html>
